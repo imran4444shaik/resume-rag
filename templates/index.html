@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume RAG</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; flex-direction: column; gap: 20px; }
+        .upload-section, .chat-section { border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        textarea, input { width: 100%; padding: 10px; margin: 5px 0; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .messages { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .user { background: #e3f2fd; text-align: right; }
+        .assistant { background: #f5f5f5; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resume RAG System</h1>
+        
+        <div class="upload-section">
+            <h2>Upload Resume</h2>
+            <input type="file" id="resumeUpload" accept=".pdf">
+            <button onclick="uploadResume()">Process Resume</button>
+            <div id="uploadStatus"></div>
+        </div>
+        
+        <div class="chat-section">
+            <h2>Ask Questions</h2>
+            <div id="chatMessages" class="messages"></div>
+            <input type="text" id="questionInput" placeholder="Ask about the resume...">
+            <button onclick="askQuestion()">Ask</button>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        
+        async function uploadResume() {
+            const fileInput = document.getElementById('resumeUpload');
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            if (!fileInput.files.length) {
+                statusDiv.textContent = "Please select a PDF file";
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.filename) {
+                    statusDiv.textContent = `Processed: ${result.filename}`;
+                    currentFile = result.filename;
+                } else {
+                    statusDiv.textContent = `Error: ${result.error}`;
+                }
+            } catch (error) {
+                statusDiv.textContent = `Upload failed: ${error.message}`;
+            }
+        }
+        
+        async function askQuestion() {
+            const input = document.getElementById('questionInput');
+            const messagesDiv = document.getElementById('chatMessages');
+            
+            if (!input.value.trim()) return;
+            if (!currentFile) {
+                alert("Please upload a resume first");
+                return;
+            }
+            
+            // Add user message
+            messagesDiv.innerHTML += `<div class="message user">You: ${input.value}</div>`;
+            
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `question=${encodeURIComponent(input.value)}`
+                });
+                
+                const result = await response.json();
+                if (result.answer) {
+                    messagesDiv.innerHTML += `<div class="message assistant">Assistant: ${result.answer}</div>`;
+                } else {
+                    messagesDiv.innerHTML += `<div class="message assistant">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                messagesDiv.innerHTML += `<div class="message assistant">Request failed: ${error.message}</div>`;
+            }
+            
+            input.value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Handle Enter key in question input
+        document.getElementById('questionInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') askQuestion();
+        });
+    </script>
+</body>
+</html>
