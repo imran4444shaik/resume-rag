@@ -71,7 +71,7 @@ def generate_answer(question):
 
 # Gradio Interface
 with gr.Blocks() as demo:
-    gr.Markdown("## 📄 Resume Q&A with RAG")
+    gr.Markdown("## Resume Q&A with RAG")
     with gr.Row():
         pdf_input = gr.File(label="Upload PDF", type="filepath")  # Fixed parameter
         process_btn = gr.Button("Process PDF")
