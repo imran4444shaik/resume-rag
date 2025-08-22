@@ -1,5 +1,4 @@
-python-docx
-python-pptx
+
 PyPDF2
 langchain
 langchain_community
